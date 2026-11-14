@@ -1,0 +1,18 @@
+{
+  "botName": "Nova Era 2.0",
+  "defaultPrefix": ".",
+  "antiLinkDelete": true,
+  "welcomeEnabledByDefault": false,
+  "audioAliases": {
+    "akamepv": "akamepv (2).mp3",
+    "bem": "bem (2).mp3",
+    "ban1": "ban1 (2).mp3",
+    "ban2": "ban2 (2).mp3",
+    "bot": "bot (2).mp3",
+    "brincadeiras": "brincadeiras (2).mp3",
+    "dono": "dono (2).mp3",
+    "encosta": "encosta (2).mp3",
+    "gracinha": "gracinha (2).mp3",
+    "gostosa1": "gostosa1 (2).mp3"
+  }
+}

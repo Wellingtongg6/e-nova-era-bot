@@ -1,0 +1,21 @@
+{
+  "name": "nova-era-2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reconstru\u00e7\u00e3o funcional do bot Nova Era baseada nos arquivos recuperados.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/commands.js",
+    "test": "node src/self-test.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "6.7.18",
+    "pino": "9.6.0",
+    "qrcode-terminal": "0.12.0",
+    "wa-sticker-formatter": "4.4.4"
+  }
+}

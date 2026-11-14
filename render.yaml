@@ -1,0 +1,17 @@
+services:
+  - type: worker
+    name: nova-era-whatsapp
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    autoDeploy: false
+    disk:
+      name: nova-era-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data
