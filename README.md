@@ -1,93 +1,155 @@
-# Nova Era 2.0 — reconstrução
+## Follow Redirects
 
-Esta é uma reconstrução nova baseada no material que foi possível recuperar do arquivo recebido. **Não é a restauração integral do código original:** o arquivo recebido estava truncado e não continha o núcleo original de conexão com o WhatsApp.
+Drop-in replacement for Node's `http` and `https` modules that automatically follows redirects.
 
-## Recursos implementados
+[![npm version](https://img.shields.io/npm/v/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
+[![Build Status](https://github.com/follow-redirects/follow-redirects/workflows/CI/badge.svg)](https://github.com/follow-redirects/follow-redirects/actions)
+[![Coverage Status](https://coveralls.io/repos/follow-redirects/follow-redirects/badge.svg?branch=master)](https://coveralls.io/r/follow-redirects/follow-redirects?branch=master)
+[![npm downloads](https://img.shields.io/npm/dm/follow-redirects.svg)](https://www.npmjs.com/package/follow-redirects)
+[![Sponsor on GitHub](https://img.shields.io/static/v1?label=Sponsor&message=%F0%9F%92%96&logo=GitHub)](https://github.com/sponsors/RubenVerborgh)
 
-- Conexão via QR Code com WhatsApp (Baileys não oficial).
-- Leitura das quatro configurações de grupo recuperadas.
-- Prefixo individual por grupo (incluindo `.` e `+` preservados).
-- `.menu`, `.status`
-- `.abrir` e `.fechar`
-- `.ban`, `.promover`, `.rebaixar` (mencione ou responda à pessoa)
-- `.antilink on/off`
-- `.boasvindas on/off`
-- `.figurinha` / `.s` respondendo a imagem ou vídeo curto
-- `.audios` e `.audio nome` para os MP3 recuperados
-- Persistência das configurações em `data/groups.json`
+`follow-redirects` provides [request](https://nodejs.org/api/http.html#http_http_request_options_callback) and [get](https://nodejs.org/api/http.html#http_http_get_options_callback)
+ methods that behave identically to those found on the native [http](https://nodejs.org/api/http.html#http_http_request_options_callback) and [https](https://nodejs.org/api/https.html#https_https_request_options_callback)
+ modules, with the exception that they will seamlessly follow redirects.
 
-Comandos administrativos exigem que quem envia seja administrador e que o bot também seja administrador. O bot foi limitado a grupos; não responde conversas privadas.
+```javascript
+const { http, https } = require('follow-redirects');
 
-## Requisitos
-
-- Node.js 20 ou superior
-- Internet estável
-- Uma conta WhatsApp que você controla
-- O bot precisa ser administrador dos grupos para abrir/fechar e moderar participantes
-
-## Instalação em computador ou VPS
-
-1. Extraia o ZIP.
-2. Abra um terminal dentro da pasta `Nova_Era_2.0`.
-3. Execute:
-
-```bash
-npm install
-npm run check
-npm test
-npm start
+http.get('http://bit.ly/900913', response => {
+  response.on('data', chunk => {
+    console.log(chunk);
+  });
+}).on('error', err => {
+  console.error(err);
+});
 ```
 
-4. Escaneie o QR Code em WhatsApp > Aparelhos conectados > Conectar aparelho.
-5. Adicione a conta do bot aos grupos e conceda administrador.
+You can inspect the final redirected URL through the `responseUrl` property on the `response`.
+If no redirection happened, `responseUrl` is the original request URL.
 
-## Android / Termux
-
-É possível tentar executar no Termux, mas sessões longas no Android podem ser encerradas pelo sistema. Para 24 horas contínuas, prefira VPS.
-
-```bash
-pkg update
-pkg install nodejs-lts git
-cd /caminho/da/pasta/Nova_Era_2.0
-npm install
-npm run check
-npm test
-npm start
+```javascript
+const request = https.request({
+  host: 'bitly.com',
+  path: '/UHfDGO',
+}, response => {
+  console.log(response.responseUrl);
+  // 'http://duckduckgo.com/robots.txt'
+});
+request.end();
 ```
 
-## Primeiros testes
+## Options
+### Global options
+Global options are set directly on the `follow-redirects` module:
 
-Em um grupo de teste onde você e o bot sejam administradores:
+```javascript
+const followRedirects = require('follow-redirects');
+followRedirects.maxRedirects = 10;
+followRedirects.maxBodyLength = 20 * 1024 * 1024; // 20 MB
+```
 
-- `.menu`
-- `.status`
-- `.antilink on`
-- `.antilink off`
-- `.boasvindas on`
-- `.boasvindas off`
-- `.fechar` e depois `.abrir`
-- `.audios`
-- `.audio bem`
-- Responda uma imagem com `.figurinha`
-- Marque um participante de teste com `.promover`, `.rebaixar` ou `.ban`
+The following global options are supported:
 
-Faça os testes de moderação somente em grupo de teste e com autorização.
+- `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
 
-## Segurança
+- `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
 
-- **Nunca compartilhe `data/auth/`**: contém a sessão vinculada à sua conta.
-- Não envie o QR Code a ninguém.
-- Faça backup de `data/groups.json` e `data/auth/` em local seguro.
-- Use uma conta de teste inicialmente.
-- Baileys é uma biblioteca não oficial; mudanças no WhatsApp podem interromper a conexão ou exigir atualização.
-- O bot não tem proteção contra todo tipo de spam, golpes ou links maliciosos; o antilink é uma barreira simples.
+### Per-request options
+Per-request options are set by passing an `options` object:
 
-## O que foi preservado
+```javascript
+const url = require('url');
+const { http, https } = require('follow-redirects');
 
-A pasta `legacy/recovered-files/` guarda os 596 arquivos completos recuperados do ZIP interno, incluindo bibliotecas, scripts, documentação, arquivos de mídia e arquivos históricos. A pasta `legacy/recovery/` contém as configurações originais recuperadas e a cópia parcial do ZIP original. Esses arquivos legados foram preservados como referência e **não são carregados pelo novo núcleo**.
+const options = url.parse('http://bit.ly/900913');
+options.maxRedirects = 10;
+options.beforeRedirect = (options, response, request) => {
+  // Use this to adjust the request options upon redirecting,
+  // to inspect the latest response headers,
+  // or to cancel the request by throwing an error
 
-## Limitações conhecidas
+  // response.headers = the redirect response headers
+  // response.statusCode = the redirect response code (eg. 301, 307, etc.)
 
-- Recursos do sistema antigo que não aparecem nos arquivos recuperados não foram recriados automaticamente.
-- Os arquivos de áudio recuperados estão disponíveis por comando; os demais arquivos de imagem/GIF recuperados permanecem preservados na pasta legada.
-- Não foi possível validar a conexão real com o WhatsApp nesta sessão, pois isso exige instalar dependências e parear uma conta. A checagem local de sintaxe e estrutura não substitui um teste real de 24 horas.
+  // request.url = the requested URL that resulted in a redirect
+  // request.headers = the headers in the request that resulted in a redirect
+  // request.method = the method of the request that resulted in a redirect
+  if (options.hostname === "example.com") {
+    options.auth = "user:password";
+  }
+};
+http.request(options);
+```
+
+In addition to the [standard HTTP](https://nodejs.org/api/http.html#http_http_request_options_callback) and [HTTPS options](https://nodejs.org/api/https.html#https_https_request_options_callback),
+the following per-request options are supported:
+- `followRedirects` (default: `true`) – whether redirects should be followed.
+
+- `maxRedirects` (default: `21`) – sets the maximum number of allowed redirects; if exceeded, an error will be emitted.
+
+- `maxBodyLength` (default: 10MB) – sets the maximum size of the request body; if exceeded, an error will be emitted.
+
+- `beforeRedirect` (default: `undefined`) – optionally change the request `options` on redirects, or abort the request by throwing an error.
+
+- `agents` (default: `undefined`) – sets the `agent` option per protocol, since HTTP and HTTPS use different agents. Example value: `{ http: new http.Agent(), https: new https.Agent() }`
+
+- `trackRedirects` (default: `false`) – whether to store the redirected response details into the `redirects` array on the response object.
+
+
+### Advanced usage
+By default, `follow-redirects` will use the Node.js default implementations
+of [`http`](https://nodejs.org/api/http.html)
+and [`https`](https://nodejs.org/api/https.html).
+To enable features such as caching and/or intermediate request tracking,
+you might instead want to wrap `follow-redirects` around custom protocol implementations:
+
+```javascript
+const { http, https } = require('follow-redirects').wrap({
+  http: require('your-custom-http'),
+  https: require('your-custom-https'),
+});
+```
+
+Such custom protocols only need an implementation of the `request` method.
+
+## Browser Usage
+
+Due to the way the browser works,
+the `http` and `https` browser equivalents perform redirects by default.
+
+By requiring `follow-redirects` this way:
+```javascript
+const http = require('follow-redirects/http');
+const https = require('follow-redirects/https');
+```
+you can easily tell webpack and friends to replace
+`follow-redirect` by the built-in versions:
+
+```json
+{
+  "follow-redirects/http"  : "http",
+  "follow-redirects/https" : "https"
+}
+```
+
+## Contributing
+
+Pull Requests are always welcome. Please [file an issue](https://github.com/follow-redirects/follow-redirects/issues)
+ detailing your proposal before you invest your valuable time. Additional features and bug fixes should be accompanied
+ by tests. You can run the test suite locally with a simple `npm test` command.
+
+## Debug Logging
+
+`follow-redirects` uses the excellent [debug](https://www.npmjs.com/package/debug) for logging. To turn on logging
+ set the environment variable `DEBUG=follow-redirects` for debug output from just this module. When running the test
+ suite it is sometimes advantageous to set `DEBUG=*` to see output from the express server as well.
+
+## Authors
+
+- [Ruben Verborgh](https://ruben.verborgh.org/)
+- [Olivier Lalonde](mailto:olalonde@gmail.com)
+- [James Talmage](mailto:james@talmage.io)
+
+## License
+
+[MIT License](https://github.com/follow-redirects/follow-redirects/blob/master/LICENSE)
